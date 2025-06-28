@@ -14,11 +14,36 @@ const RESULTS_PER_PAGE = 30;
 
 function App() {
   const [users, setUsers] = useState(() => getManualUsersFromStorage());
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const currentTheme = localStorage.getItem('theme');
+    if (currentTheme === 'dark') {
+      setIsDarkMode(true);
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(prevMode => {
+      const newMode = !prevMode;
+      if (newMode) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('theme', 'light');
+      }
+      return newMode;
+    });
+  };
 
   const observer = useRef();
   const lastUserElementRef = useCallback(node => {
@@ -40,7 +65,7 @@ function App() {
     try {
       const response = await fetch(`https://randomuser.me/api/?page=${currentPage}&results=${RESULTS_PER_PAGE}&seed=pendar`);
       if (!response.ok) throw new Error('خطا در دریافت اطلاعات از سرور');
-      
+
       const data = await response.json();
 
       if (data.results.length === 0) {
@@ -59,7 +84,7 @@ function App() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []); 
+  }, []);
   useEffect(() => {
     fetchApiUsers(page);
   }, [fetchApiUsers, page]);
@@ -69,9 +94,9 @@ function App() {
       login: { uuid: `custom-${Date.now()}` },
       name: { first: newUser.name, last: '' },
       email: newUser.email,
-      picture: { large: newUser.profilePicUrl}
+      picture: { large: newUser.profilePicUrl }
     };
-    
+
     const currentManualUsers = getManualUsersFromStorage();
     const updatedManualUsers = [userToAdd, ...currentManualUsers];
     localStorage.setItem('manualUsers', JSON.stringify(updatedManualUsers));
@@ -85,15 +110,32 @@ function App() {
       <div className="App">
         <header className="App-header">
           <h1>مدیریت کاربران</h1>
+          <button
+            onClick={toggleDarkMode}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              left: '20px',
+              padding: '10px 15px',
+              cursor: 'pointer',
+              backgroundColor: isDarkMode ? '#555' : '#eee',
+              color: isDarkMode ? '#fff' : '#333',
+              border: 'none',
+              borderRadius: '5px',
+              fontSize: '0.9em'
+            }}
+          >
+            {isDarkMode ? 'تم روشن' : 'تم تاریک'}
+          </button>
         </header>
         <main>
           <Routes>
-            <Route 
-              path="/" 
-              element={<AddUserForm onUserAdded={handleAddUser} />} 
+            <Route
+              path="/"
+              element={<AddUserForm onUserAdded={handleAddUser} />}
             />
-            <Route 
-              path="/users" 
+            <Route
+              path="/users"
               element={
                 <UserList
                   users={users}
@@ -106,7 +148,7 @@ function App() {
                   }}
                   lastUserRef={lastUserElementRef}
                 />
-              } 
+              }
             />
           </Routes>
         </main>
